@@ -107,7 +107,7 @@
     <repositories>
         <repository>
             <id>github</id>
-            <url>https://raw.github.com/wm-dyhhd/mdq/main</url>
+            <url>https://raw.github.com/wm-dyhhd/mdq/main/</url>
             <snapshots>
                 <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>
