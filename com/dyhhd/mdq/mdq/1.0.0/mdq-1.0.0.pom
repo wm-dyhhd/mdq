@@ -13,10 +13,12 @@
         <module>mdq-core</module>
         <module>mdq-spring</module>
         <module>mdq-spring-boot-starter</module>
+
         <module>simple</module>
         <module>simple/simple-mdq-core</module>
         <module>simple/simple-mdq-spring</module>
         <module>simple/simple-mdq-spring-boot</module>
+
     </modules>
 
     <name>mdq</name>
