@@ -67,6 +67,7 @@
     <build>
         <plugins>
             <!-- mvn clean deploy -->
+            <!-- mvn clean deploy -pl mdq-core,mdq-spring,mdq-spring-boot-starter -am -->
             <!--该插件识别java代码 否则自己在Project Structure设置-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
