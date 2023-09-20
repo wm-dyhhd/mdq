@@ -1,7 +1,7 @@
 package com.dyhhd.mdq.simple.spring.boot;
 
-import com.dyhhd.mdq.core.Worker;
 import com.dyhhd.mdq.core.Producer;
+import com.dyhhd.mdq.core.Worker;
 import com.dyhhd.mdq.spring.annotation.QueueListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,13 +32,13 @@ public class DmqSpringBootTest {
     }
 
     @GetMapping("/push1")
-    public String push(Long time, String name) {
+    public String push1(Long time, String name) {
         ThreadLocalRandom current = ThreadLocalRandom.current();
         int i = current.nextInt(3);
         int queue = current.nextInt(3) + 1;
         if (i % 3 == 0) {
             producer.addWorker("queue" + queue, time, name);
-        } else if (i % 3 == 1){
+        } else if (i % 3 == 1) {
             producer.addWorker("queue" + queue, time, new MyInfo1(name));
         } else {
             WorkerInstance<MyInfo1> instance = new WorkerInstance<>(time);
@@ -61,6 +61,12 @@ public class DmqSpringBootTest {
             producer.addWorker("queue" + queue, time, info2);
         }
 
+        return "success";
+    }
+
+    @GetMapping("/push3")
+    public String push3(Long time, String name) {
+        producer.addWorker("queue", time, name);
         return "success";
     }
 

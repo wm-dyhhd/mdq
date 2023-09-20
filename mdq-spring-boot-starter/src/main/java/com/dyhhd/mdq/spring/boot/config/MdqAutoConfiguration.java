@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author lv ning
  */
-@Configuration
 @EnableMdq
+@Configuration
 public class MdqAutoConfiguration {
 
     @Bean
@@ -46,5 +46,10 @@ public class MdqAutoConfiguration {
                 new LinkedBlockingQueue<>(100),
                 ThreadFactory.defaultThreadFactory(),
                 new ThreadPoolExecutor.AbortPolicy());
+    }
+
+    @Bean
+    MdqAutoBeanFactoryPostProcessor mdqAutoBeanFactoryPostProcessor() {
+        return new MdqAutoBeanFactoryPostProcessor();
     }
 }
