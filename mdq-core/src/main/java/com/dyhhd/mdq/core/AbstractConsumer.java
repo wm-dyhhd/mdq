@@ -14,14 +14,26 @@ public abstract class AbstractConsumer implements Consumer {
 
     protected static Log log = LogFactory.getLog(AbstractConsumer.class);
 
-    private String queue;
-
     /**
      * 是否再运行
      */
-    protected volatile boolean run = true;
+    private volatile boolean run = true;
 
-    protected final DelayQueue<Worker> delayQueue;
+    protected DelayQueue<Worker> delayQueue;
+
+    protected Producer producer;
+
+    private String queue;
+
+    public AbstractConsumer(String queue) {
+        this.queue = queue;
+    }
+
+    public AbstractConsumer(Producer producer, String queue) {
+        this(producer.getQueue(queue));
+        this.queue = queue;
+        this.producer = producer;
+    }
 
     public AbstractConsumer(DelayQueue<Worker> delayQueue) {
         this.delayQueue = delayQueue;
@@ -53,8 +65,24 @@ public abstract class AbstractConsumer implements Consumer {
         return queue;
     }
 
-    public void setQueue(String name) {
+    public void setQueue(String queue) {
         this.queue = queue;
+    }
+
+    public DelayQueue<Worker> getDelayQueue() {
+        return delayQueue;
+    }
+
+    public void setDelayQueue(DelayQueue<Worker> delayQueue) {
+        this.delayQueue = delayQueue;
+    }
+
+    public Producer getProducer() {
+        return producer;
+    }
+
+    public void setProducer(Producer producer) {
+        this.producer = producer;
     }
 
     @Override

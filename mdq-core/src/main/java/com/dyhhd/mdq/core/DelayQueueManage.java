@@ -1,5 +1,6 @@
 package com.dyhhd.mdq.core;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -14,7 +15,7 @@ public interface DelayQueueManage {
      *
      * @param consumers 队列信息
      */
-    void executes(List<Consumer> consumers);
+    void executes(Collection<Consumer> consumers);
 
     /**
      * 执行队列
@@ -27,4 +28,9 @@ public interface DelayQueueManage {
      * 停止运行
      */
     void shutdown();
+
+    /**
+     * 启动
+     */
+    void activate();
 }

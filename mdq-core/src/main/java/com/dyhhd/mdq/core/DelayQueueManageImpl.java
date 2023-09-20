@@ -1,5 +1,7 @@
 package com.dyhhd.mdq.core;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -10,10 +12,17 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class DelayQueueManageImpl implements DelayQueueManage {
 
+    /**
+     * 线程池
+     */
     private ThreadPoolExecutor threadPoolExecutor;
 
+    /**
+     * 保存消费者
+     */
+    private final List<Consumer> consumers = new ArrayList<>();
+
     public DelayQueueManageImpl() {
-        this(null);
     }
 
     public DelayQueueManageImpl(ThreadPoolExecutor threadPoolExecutor) {
@@ -21,7 +30,7 @@ public class DelayQueueManageImpl implements DelayQueueManage {
     }
 
     @Override
-    public void executes(List<Consumer> consumers) {
+    public void executes(Collection<Consumer> consumers) {
         if (null != consumers) {
             consumers.forEach(this::execute);
         }
@@ -29,7 +38,11 @@ public class DelayQueueManageImpl implements DelayQueueManage {
 
     @Override
     public void execute(Consumer consumer) {
-        this.threadPoolExecutor.submit(consumer);
+        if (this.consumers.contains(consumer)) {
+            return;
+        }
+        this.threadPoolExecutor.execute(consumer);
+        this.consumers.add(consumer);
     }
 
     /**
@@ -37,7 +50,15 @@ public class DelayQueueManageImpl implements DelayQueueManage {
      */
     @Override
     public void shutdown() {
-        this.threadPoolExecutor.shutdown();
+        this.consumers.forEach(Consumer::stop);
+    }
+
+    /**
+     * 停止运行
+     */
+    @Override
+    public void activate() {
+        this.consumers.forEach(Consumer::start);
     }
 
     public void setThreadPoolExecutor(ThreadPoolExecutor daemonThreadPoolExecutor) {
