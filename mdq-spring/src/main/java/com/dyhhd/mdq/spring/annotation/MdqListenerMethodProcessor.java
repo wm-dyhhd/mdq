@@ -2,9 +2,9 @@ package com.dyhhd.mdq.spring.annotation;
 
 import com.dyhhd.mdq.core.Consumer;
 import com.dyhhd.mdq.core.DelayQueueManage;
+import com.dyhhd.mdq.core.Producer;
 import com.dyhhd.mdq.log.Log;
 import com.dyhhd.mdq.log.LogFactory;
-import com.dyhhd.mdq.core.Producer;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
