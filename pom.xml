@@ -7,7 +7,7 @@
     <groupId>com.dyhhd.mdq</groupId>
     <artifactId>mdq</artifactId>
     <packaging>pom</packaging>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 
     <modules>
         <module>mdq-core</module>
@@ -34,7 +34,6 @@
         <spring-boot.version>2.7.15</spring-boot.version>
         <slf4j.version>2.0.9</slf4j.version>
         <log4j.version>2.20.0</log4j.version>
-        <fastjson2.version>2.0.40</fastjson2.version>
     </properties>
 
     <dependencyManagement>
@@ -55,11 +54,6 @@
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-core</artifactId>
                 <version>${log4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.alibaba.fastjson2</groupId>
-                <artifactId>fastjson2</artifactId>
-                <version>${fastjson2.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

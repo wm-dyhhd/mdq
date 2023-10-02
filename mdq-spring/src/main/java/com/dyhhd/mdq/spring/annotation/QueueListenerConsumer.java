@@ -1,13 +1,14 @@
 package com.dyhhd.mdq.spring.annotation;
 
-import com.alibaba.fastjson2.JSON;
 import com.dyhhd.mdq.core.AbstractConsumer;
+import com.dyhhd.mdq.core.Producer;
 import com.dyhhd.mdq.core.Worker;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.DelayQueue;
 
 /**
  * 队列监听器 消费者
@@ -18,9 +19,10 @@ public class QueueListenerConsumer extends AbstractConsumer {
 
     private final Set<QueueMetadata> value;
 
-    public QueueListenerConsumer(DelayQueue<Worker> delayQueue,
+    public QueueListenerConsumer(Producer producer,
+                                 String queue,
                                  Set<QueueMetadata> value) {
-        super(delayQueue);
+        super(producer, queue);
         this.value = value;
     }
 
@@ -42,7 +44,13 @@ public class QueueListenerConsumer extends AbstractConsumer {
             Object[] args = new Object[parameterTypes.length];
             for (int i = 0; i < parameterTypes.length; i++) {
                 Class<?> parameterType = parameterTypes[i];
-                if (parameterType.isInstance(worker)) {
+                if (parameterType == Worker.class) {
+                    args[i] = worker;
+                    inject = true;
+                } else if (parameterType == worker.getClass()) {
+                    args[i] = worker;
+                    inject = true;
+                } else if (parameterType.isInstance(worker)) {
                     args[i] = worker;
                     inject = true;
                 }
@@ -56,7 +64,7 @@ public class QueueListenerConsumer extends AbstractConsumer {
                         inject = true;
                         break;
                     } else if (Map.class == parameterType) {
-                        args[i] = JSON.parseObject(JSON.toJSONString(worker));
+                        args[i] = objectToMap(worker);
                         inject = true;
                         break;
                     }
@@ -73,5 +81,21 @@ public class QueueListenerConsumer extends AbstractConsumer {
 //                throw new RuntimeException(e);
             }
         }
+    }
+
+    private Map<String, Object> objectToMap(Object object) {
+        Map<String, Object> map = new HashMap<>();
+        Class<?> clz = object.getClass();
+        Field[] fields = clz.getDeclaredFields();
+        for (Field field : fields) {
+            try {
+                field.setAccessible(true);
+                map.put(field.getName(), field.get(object));
+            } catch (IllegalAccessException e) {
+                log.error("object: " + object + " field：" + field.getName() + " set error", e);
+//                throw new RuntimeException(e);
+            }
+        }
+        return map;
     }
 }

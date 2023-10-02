@@ -117,4 +117,10 @@ public class DmqSpringBootTest {
         System.out.println("listener8 worker " + worker);
         log.info("worker : {}", worker);
     }
+
+    @QueueListener(queues = {"queue1", "queue2", "queue3"})
+    public void listener9(Worker worker) {
+        System.out.println("listener9 worker " + worker);
+        log.info("worker : {}", worker);
+    }
 }
