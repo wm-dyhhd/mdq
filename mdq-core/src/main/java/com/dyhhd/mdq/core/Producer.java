@@ -1,7 +1,5 @@
 package com.dyhhd.mdq.core;
 
-import com.dyhhd.mdq.core.Worker;
-
 import java.util.concurrent.DelayQueue;
 
 /**

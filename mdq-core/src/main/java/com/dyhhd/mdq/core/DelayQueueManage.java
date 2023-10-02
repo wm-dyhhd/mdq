@@ -1,7 +1,6 @@
 package com.dyhhd.mdq.core;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * 延迟队列管理器
