@@ -86,7 +86,7 @@ public class MdqListenerMethodProcessor implements SmartInitializingSingleton, B
             String queue = entry.getKey();
             Set<QueueMetadata> value = entry.getValue();
 
-            consumer = new QueueListenerConsumer(produce.getQueue(queue), value);
+            consumer = new QueueListenerConsumer(produce, queue, value);
             consumers.add(consumer);
         }
         manage.executes(consumers);

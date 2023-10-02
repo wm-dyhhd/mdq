@@ -37,7 +37,7 @@ public class MdqAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public ThreadPoolExecutor daemonThreadPoolExecutor() {
+    public ThreadPoolExecutor threadPoolExecutor() {
         int cpu = Runtime.getRuntime().availableProcessors();
         return new ThreadPoolExecutor(cpu + 1,
                 50,
