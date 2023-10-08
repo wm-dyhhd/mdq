@@ -5,6 +5,7 @@ import com.dyhhd.mdq.core.DelayQueueManageImpl;
 import com.dyhhd.mdq.core.DelayQueueProducer;
 import com.dyhhd.mdq.core.Producer;
 import com.dyhhd.mdq.spring.annotation.EnableMdq;
+import com.dyhhd.mdq.thread.ThreadFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -20,12 +21,17 @@ import org.springframework.context.annotation.Configuration;
 public class MdqConfig {
 
     @Bean
-    public DelayQueueManage delayQueueManage() {
-        return new DelayQueueManageImpl();
+    public DelayQueueManage delayQueueManage(ThreadFactory threadFactory) {
+        return new DelayQueueManageImpl(threadFactory);
     }
 
     @Bean
     public Producer producer() {
         return new DelayQueueProducer();
+    }
+
+    @Bean
+    public ThreadFactory threadFactory() {
+        return ThreadFactory.defaultThreadFactory();
     }
 }

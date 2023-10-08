@@ -1,9 +1,6 @@
 package com.dyhhd.mdq.spring.boot.config;
 
-import com.dyhhd.mdq.core.AbstractConsumer;
-import com.dyhhd.mdq.core.Consumer;
-import com.dyhhd.mdq.core.DelayQueueManage;
-import com.dyhhd.mdq.core.Producer;
+import com.dyhhd.mdq.core.*;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -28,7 +25,19 @@ public class MdqAutoBeanFactoryPostProcessor implements SmartInitializingSinglet
 
     private Producer producer;
 
+    private AckFailCallback ackFailCallback;
+
     private List<Consumer> consumers;
+
+    private final int retryTotal;
+
+    public MdqAutoBeanFactoryPostProcessor() {
+        this(0);
+    }
+
+    public MdqAutoBeanFactoryPostProcessor(int retryTotal) {
+        this.retryTotal = retryTotal;
+    }
 
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
@@ -37,6 +46,12 @@ public class MdqAutoBeanFactoryPostProcessor implements SmartInitializingSinglet
         this.manage = beanFactory.getBean("delayQueueManage", DelayQueueManage.class);
 
         this.producer = beanFactory.getBean("producer", Producer.class);
+
+        try {
+            this.ackFailCallback = beanFactory.getBean("ackFailCallback", AckFailCallback.class);
+        } catch (BeansException e) {
+//            throw new RuntimeException(e);
+        }
 
         Map<String, Consumer> beans = beanFactory.getBeansOfType(Consumer.class, false, false);
         List<Consumer> consumers = new ArrayList<>(beans.values());
@@ -62,6 +77,13 @@ public class MdqAutoBeanFactoryPostProcessor implements SmartInitializingSinglet
         for (Consumer c : consumers) {
             if (c instanceof AbstractConsumer) {
                 AbstractConsumer consumer = (AbstractConsumer) c;
+
+                if (consumer instanceof AbstractAckConsumer) {
+                    AbstractAckConsumer ackConsumer = (AbstractAckConsumer) consumer;
+                    ackConsumer.setAckFailCallback(ackFailCallback);
+                    ackConsumer.setRetryTotal(retryTotal);
+                }
+
                 if (null != consumer.getDelayQueue()) {
                     continue;
                 }

@@ -14,4 +14,5 @@ import java.lang.annotation.*;
 @Documented
 @Import(ImportMdqRegistrar.class)
 public @interface EnableMdq {
+
 }
