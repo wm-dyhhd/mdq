@@ -1,8 +1,6 @@
 package com.dyhhd.mdq.spring.annotation;
 
-import com.dyhhd.mdq.core.Consumer;
-import com.dyhhd.mdq.core.DelayQueueManage;
-import com.dyhhd.mdq.core.Producer;
+import com.dyhhd.mdq.core.*;
 import com.dyhhd.mdq.log.Log;
 import com.dyhhd.mdq.log.LogFactory;
 import org.springframework.aop.support.AopUtils;
@@ -35,6 +33,8 @@ public class MdqListenerMethodProcessor implements SmartInitializingSingleton, B
 
     private Producer produce;
 
+    private AckFailCallback ackFailCallback;
+
     private final Map<String, Set<QueueMetadata>> metadataMap = new ConcurrentHashMap<>();
 
     @Override
@@ -64,6 +64,18 @@ public class MdqListenerMethodProcessor implements SmartInitializingSingleton, B
             }
             this.produce = producers.get(0);
         }
+
+        Map<String, AckFailCallback> ackFailCallbackMap = beanFactory.getBeansOfType(AckFailCallback.class, false, false);
+        List<AckFailCallback> ackFailCallbacks = new ArrayList<>(ackFailCallbackMap.values());
+        AnnotationAwareOrderComparator.sort(ackFailCallbacks);
+        if (ackFailCallbacks.isEmpty()) {
+            logger.warn("dmq ack fail callback not exists");
+        } else {
+            if (ackFailCallbacks.size() > 1) {
+                logger.warn("dmq ack fail callback exists " + ackFailCallbacks.size() + " multiple ");
+            }
+            this.ackFailCallback = ackFailCallbacks.get(0);
+        }
     }
 
     @Override
@@ -80,16 +92,28 @@ public class MdqListenerMethodProcessor implements SmartInitializingSingleton, B
         Producer produce = this.produce;
         Assert.state(this.produce != null, "producer not instantiate");
 
-        List<Consumer> consumers = new ArrayList<>();
         Consumer consumer;
         for (Map.Entry<String, Set<QueueMetadata>> entry : metadataMap.entrySet()) {
             String queue = entry.getKey();
             Set<QueueMetadata> value = entry.getValue();
 
-            consumer = new QueueListenerConsumer(produce, queue, value);
-            consumers.add(consumer);
+            for (QueueMetadata metadata : value) {
+                if (metadata.process) {
+                    if (metadata.ackIndex > -1) {
+                        AbstractAckConsumer ackConsumer = new QueueListenerAckConsumer(produce, queue, metadata);
+                        ackConsumer.setAckFailCallback(ackFailCallback);
+                        consumer = ackConsumer;
+                    } else {
+                        consumer = new QueueListenerConsumer(produce, queue, metadata);
+                    }
+
+                    manage.execute(consumer);
+                } else {
+                    // log
+                    logger.warn("class : " + metadata.clz + " method : " + metadata.method + " args not match");
+                }
+            }
         }
-        manage.executes(consumers);
     }
 
     private void cacheMetadata(Object bean, Class<?> clz) {

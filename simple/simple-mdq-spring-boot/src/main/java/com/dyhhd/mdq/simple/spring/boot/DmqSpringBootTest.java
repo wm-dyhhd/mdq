@@ -70,6 +70,15 @@ public class DmqSpringBootTest {
         return "success";
     }
 
+    @GetMapping("/push4")
+    public String push4(Long time, String name) {
+        MyAckWorker worker = new MyAckWorker(time);
+        worker.setName(name);
+        System.out.println("worker " + worker);
+        producer.addWorker("queue-ack", worker);
+        return "success";
+    }
+
     @QueueListener(queues = {"queue1", "queue2", "queue3"})
     public void listener1(Worker worker) {
         System.out.println("listener1 worker " + worker);
@@ -121,6 +130,18 @@ public class DmqSpringBootTest {
     @QueueListener(queues = {"queue1", "queue2", "queue3"})
     public void listener9(Worker worker) {
         System.out.println("listener9 worker " + worker);
+        log.info("worker : {}", worker);
+    }
+
+    @QueueListener(queues = {"queue-ack", "queue1"})
+    public void listener10(Worker worker) {
+        System.out.println("listener10 worker " + worker);
+        log.info("worker : {}", worker);
+    }
+
+    @QueueListener(queues = {"queue-ack"})
+    public void listener11(MyAckWorker worker) {
+        System.out.println("listener11 worker " + worker);
         log.info("worker : {}", worker);
     }
 }

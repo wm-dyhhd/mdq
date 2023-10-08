@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author lv ning
  */
-public class ThreadFactory implements java.util.concurrent.ThreadFactory {
+public class ThreadFactory {
 
     public static final String DEFAULT_THREAD_PREFIX = "thread-pool";
 
@@ -37,7 +37,6 @@ public class ThreadFactory implements java.util.concurrent.ThreadFactory {
                 "-thread-";
     }
 
-    @Override
     public Thread newThread(Runnable r) {
         Thread t = new Thread(group, r,
                 namePrefix + threadNumber.getAndIncrement(),
