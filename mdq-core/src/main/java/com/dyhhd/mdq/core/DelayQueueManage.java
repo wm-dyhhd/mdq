@@ -32,4 +32,10 @@ public interface DelayQueueManage {
      * 启动
      */
     void activate();
+
+    /**
+     * 立马停止
+     */
+    @Deprecated
+    void showdownNow();
 }
