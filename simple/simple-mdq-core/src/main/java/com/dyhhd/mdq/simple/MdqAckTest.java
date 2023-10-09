@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  */
 public class MdqAckTest {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Thread thread = Thread.currentThread();
         String name = "queue-name";
 
@@ -41,6 +41,22 @@ public class MdqAckTest {
 
         DelayQueueManage manage = new DelayQueueManageImpl(ThreadFactory.defaultThreadFactory());
         manage.execute(consumer);
+
+        Thread.sleep(1000);
+//        manage.shutdown();
+        manage.showdownNow();
+
+        Thread.sleep(1000);
+        manage.activate();
+
+//        Thread.sleep(100000);
+
+        Thread.sleep(1000);
+        manage.shutdown();
+//        manage.showdownNow();
+
+        Thread.sleep(1000);
+        manage.activate();
 
         System.out.println("------------");
 //        LockSupport.park(thread);
