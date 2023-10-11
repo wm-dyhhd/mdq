@@ -21,14 +21,6 @@ public class MdqAutoBeanFactoryPostProcessor implements SmartInitializingSinglet
 
     private ConfigurableListableBeanFactory beanFactory;
 
-    private DelayQueueManage manage;
-
-    private Producer producer;
-
-    private AckFailCallback ackFailCallback;
-
-    private List<Consumer> consumers;
-
     private final int retryTotal;
 
     public MdqAutoBeanFactoryPostProcessor() {
@@ -43,36 +35,30 @@ public class MdqAutoBeanFactoryPostProcessor implements SmartInitializingSinglet
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
         this.beanFactory = beanFactory;
 
-        this.manage = beanFactory.getBean("delayQueueManage", DelayQueueManage.class);
+    }
 
-        this.producer = beanFactory.getBean("producer", Producer.class);
+    @Override
+    public void afterSingletonsInstantiated() {
+        ConfigurableListableBeanFactory beanFactory = this.beanFactory;
+        Assert.state(this.beanFactory != null, "No ConfigurableListableBeanFactory set");
 
-        try {
-            this.ackFailCallback = beanFactory.getBean("ackFailCallback", AckFailCallback.class);
-        } catch (BeansException e) {
-//            throw new RuntimeException(e);
-        }
+        DelayQueueManage manage = beanFactory.getBean("delayQueueManage", DelayQueueManage.class);
+//        Assert.state(manage != null, "DelayQueueManage not initialized");
+
+        Producer producer = beanFactory.getBean("producer", Producer.class);
+//        Assert.state(producer != null, "Producer not initialized");
 
         Map<String, Consumer> beans = beanFactory.getBeansOfType(Consumer.class, false, false);
         List<Consumer> consumers = new ArrayList<>(beans.values());
         AnnotationAwareOrderComparator.sort(consumers);
-        this.consumers = consumers;
-    }
+//        Assert.state(consumers != null, "Consumer List not initialized");
 
-
-    @Override
-    public void afterSingletonsInstantiated() {
-//        ConfigurableListableBeanFactory beanFactory = this.beanFactory;
-//        Assert.state(this.beanFactory != null, "No ConfigurableListableBeanFactory set");
-
-        DelayQueueManage manage = this.manage;
-        Assert.state(this.manage != null, "DelayQueueManage not initialized");
-
-        Producer producer = this.producer;
-        Assert.state(this.producer != null, "Producer not initialized");
-
-        List<Consumer> consumers = this.consumers;
-        Assert.state(this.consumers != null, "Consumer List not initialized");
+        AckFailCallback ackFailCallback = null;
+        try {
+            ackFailCallback = beanFactory.getBean("ackFailCallback", AckFailCallback.class);
+        } catch (BeansException e) {
+//            throw new RuntimeException(e);
+        }
 
         for (Consumer c : consumers) {
             if (c instanceof AbstractConsumer) {

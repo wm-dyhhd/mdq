@@ -43,6 +43,7 @@ public class MdqAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     MdqAutoBeanFactoryPostProcessor mdqAutoBeanFactoryPostProcessor() {
         return new MdqAutoBeanFactoryPostProcessor();
     }
