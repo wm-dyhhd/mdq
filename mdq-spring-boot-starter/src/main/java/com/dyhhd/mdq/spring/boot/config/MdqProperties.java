@@ -22,12 +22,25 @@ public class MdqProperties {
          */
         private int retryTotal = 3;
 
+        /**
+         * 启动 自动 ack
+         */
+        private boolean autoAck;
+
         public int getRetryTotal() {
             return retryTotal;
         }
 
         public void setRetryTotal(int retryTotal) {
             this.retryTotal = retryTotal;
+        }
+
+        public boolean isAutoAck() {
+            return autoAck;
+        }
+
+        public void setAutoAck(boolean autoAck) {
+            this.autoAck = autoAck;
         }
     }
 

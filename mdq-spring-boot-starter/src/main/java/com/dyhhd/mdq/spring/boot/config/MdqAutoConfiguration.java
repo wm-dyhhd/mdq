@@ -1,7 +1,7 @@
 package com.dyhhd.mdq.spring.boot.config;
 
 import com.dyhhd.mdq.core.*;
-import com.dyhhd.mdq.spring.annotation.EnableMdq;
+import com.dyhhd.mdq.spring.annotation.MdqAutoBeanFactoryPostProcessor;
 import com.dyhhd.mdq.thread.ThreadFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
  *
  * @author lv ning
  */
-@EnableMdq
 @Configuration
 @EnableConfigurationProperties({MdqProperties.class})
 public class MdqAutoConfiguration {
@@ -44,7 +43,10 @@ public class MdqAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    MdqAutoBeanFactoryPostProcessor mdqAutoBeanFactoryPostProcessor() {
-        return new MdqAutoBeanFactoryPostProcessor();
+    public MdqAutoBeanFactoryPostProcessor mdqAutoBeanFactoryPostProcessor(MdqProperties properties) {
+        MdqAutoBeanFactoryPostProcessor processor = new MdqAutoBeanFactoryPostProcessor();
+        processor.setAutoAck(properties.getAck().isAutoAck());
+        processor.setRetryTotal(properties.getAck().getRetryTotal());
+        return processor;
     }
 }
