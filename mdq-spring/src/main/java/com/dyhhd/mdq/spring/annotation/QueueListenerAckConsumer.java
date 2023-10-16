@@ -23,7 +23,16 @@ public class QueueListenerAckConsumer extends AbstractAckConsumer {
 
     @Override
     protected void ackRun(Worker worker, Ack ack) {
+        if (metadata.ackIndex > -1) {
+            metadata.inject(worker, ack);
+        } else {
+            super.ackRun(worker, ack);
+        }
+    }
 
-        metadata.inject(worker, ack);
+    @Override
+    protected void run(Worker worker) {
+
+        metadata.inject(worker);
     }
 }

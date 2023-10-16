@@ -5,7 +5,7 @@
     <parent>
         <artifactId>mdq</artifactId>
         <groupId>com.dyhhd.mdq</groupId>
-        <version>1.2.3.1</version>
+        <version>1.2.4</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 

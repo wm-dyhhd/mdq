@@ -21,31 +21,52 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author lv ning
  */
-public class MdqListenerMethodProcessor implements SmartInitializingSingleton, BeanFactoryPostProcessor, BeanPostProcessor {
+public class MdqAutoBeanFactoryPostProcessor implements SmartInitializingSingleton, BeanFactoryPostProcessor, BeanPostProcessor {
 
-    public static final String BEAN_NAME = MdqListenerMethodProcessor.class.getName();
+    public static final String BEAN_NAME = MdqAutoBeanFactoryPostProcessor.class.getName();
 
     protected final Log logger = LogFactory.getLog(getClass());
 
     private ConfigurableListableBeanFactory beanFactory;
 
+    private final Map<String, Set<QueueMetadata>> metadataMap = new ConcurrentHashMap<>();
+
+    private boolean autoAck;
+
+    private int retryTotal;
+
     private DelayQueueManage delayQueueManage;
-
-    private Producer produce;
-
+    private Producer producer;
+    private List<Consumer> consumers;
     private AckFailCallback ackFailCallback;
 
-    private final Map<String, Set<QueueMetadata>> metadataMap = new ConcurrentHashMap<>();
+    public MdqAutoBeanFactoryPostProcessor() {
+    }
 
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+
         this.beanFactory = beanFactory;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        Class<?> targetClass = AopUtils.getTargetClass(bean);
+        cacheMetadata(bean, targetClass);
+        return bean;
+    }
+
+    @Override
+    public void afterSingletonsInstantiated() {
+        ConfigurableListableBeanFactory beanFactory = this.beanFactory;
+        Assert.state(this.beanFactory != null, "No ConfigurableListableBeanFactory set");
 
         Map<String, DelayQueueManage> manageMap = beanFactory.getBeansOfType(DelayQueueManage.class, false, false);
         List<DelayQueueManage> manages = new ArrayList<>(manageMap.values());
         AnnotationAwareOrderComparator.sort(manages);
         if (manages.isEmpty()) {
             logger.warn("dmq manage not exists");
+            throw new IllegalStateException("manage not instantiate");
         } else {
             if (manages.size() > 1) {
                 logger.warn("dmq manage exists " + manages.size() + " multiple ");
@@ -58,39 +79,79 @@ public class MdqListenerMethodProcessor implements SmartInitializingSingleton, B
         AnnotationAwareOrderComparator.sort(producers);
         if (producers.isEmpty()) {
             logger.warn("dmq producer not exists");
+            throw new IllegalStateException("producer not instantiate");
         } else {
             if (producers.size() > 1) {
                 logger.warn("dmq producer exists " + producers.size() + " multiple ");
             }
-            this.produce = producers.get(0);
+            this.producer = producers.get(0);
         }
+
+        Map<String, Consumer> beans = beanFactory.getBeansOfType(Consumer.class, false, false);
+        List<Consumer> consumers = new ArrayList<>(beans.values());
+        AnnotationAwareOrderComparator.sort(consumers);
+        this.consumers = consumers;
 
         Map<String, AckFailCallback> ackFailCallbackMap = beanFactory.getBeansOfType(AckFailCallback.class, false, false);
         List<AckFailCallback> ackFailCallbacks = new ArrayList<>(ackFailCallbackMap.values());
         AnnotationAwareOrderComparator.sort(ackFailCallbacks);
         if (ackFailCallbacks.isEmpty()) {
-            logger.warn("dmq ack fail callback not exists");
+            logger.debug("dmq ack fail callback not exists");
         } else {
             if (ackFailCallbacks.size() > 1) {
                 logger.warn("dmq ack fail callback exists " + ackFailCallbacks.size() + " multiple ");
             }
             this.ackFailCallback = ackFailCallbacks.get(0);
         }
+
+        // interface
+        processorInterface();
+        // annotation
+        processorAnnotation();
     }
 
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        Class<?> targetClass = AopUtils.getTargetClass(bean);
-        cacheMetadata(bean, targetClass);
-        return bean;
-    }
-
-    @Override
-    public void afterSingletonsInstantiated() {
+    private void processorInterface() {
         DelayQueueManage manage = this.delayQueueManage;
-        Assert.state(this.delayQueueManage != null, "manage not instantiate");
-        Producer produce = this.produce;
-        Assert.state(this.produce != null, "producer not instantiate");
+        Assert.state(this.delayQueueManage != null, "DelayQueueManage not initialized");
+        Producer producer = this.producer;
+        Assert.state(this.producer != null, "Producer not initialized");
+        List<Consumer> consumers = this.consumers;
+        Assert.state(this.consumers != null, "Consumer List not initialized");
+
+        for (Consumer c : consumers) {
+            if (c instanceof AbstractConsumer) {
+                AbstractConsumer consumer = (AbstractConsumer) c;
+
+                if (consumer instanceof AbstractAckConsumer) {
+                    AbstractAckConsumer ackConsumer = (AbstractAckConsumer) consumer;
+                    ackConsumer.setAckFailCallback(ackFailCallback);
+                    ackConsumer.setRetryTotal(retryTotal);
+                }
+
+                if (null != consumer.getDelayQueue()) {
+                    continue;
+                }
+
+                if (null != consumer.getProducer()) {
+                    continue;
+                }
+
+                // 设置消费者
+                consumer.setProducer(producer);
+
+                consumer.setDelayQueue(consumer.getProducer().getQueue(consumer.getQueue()));
+            }
+
+            // 执行自己实现的
+            manage.execute(c);
+        }
+    }
+
+    private void processorAnnotation() {
+        DelayQueueManage manage = this.delayQueueManage;
+        Assert.state(this.delayQueueManage != null, "DelayQueueManage not initialized");
+        Producer producer = this.producer;
+        Assert.state(this.producer != null, "Producer not initialized");
 
         Consumer consumer;
         for (Map.Entry<String, Set<QueueMetadata>> entry : metadataMap.entrySet()) {
@@ -99,12 +160,19 @@ public class MdqListenerMethodProcessor implements SmartInitializingSingleton, B
 
             for (QueueMetadata metadata : value) {
                 if (metadata.process) {
-                    if (metadata.ackIndex > -1) {
-                        AbstractAckConsumer ackConsumer = new QueueListenerAckConsumer(produce, queue, metadata);
+                    // 注解的全部执行 ack
+                    if (autoAck) {
+                        AbstractAckConsumer ackConsumer = new QueueListenerAckConsumer(producer, queue, metadata);
                         ackConsumer.setAckFailCallback(ackFailCallback);
+                        ackConsumer.setRetryTotal(retryTotal);
+                        consumer = ackConsumer;
+                    } else if (metadata.ackIndex > -1) {
+                        AbstractAckConsumer ackConsumer = new QueueListenerAckConsumer(producer, queue, metadata);
+                        ackConsumer.setAckFailCallback(ackFailCallback);
+                        ackConsumer.setRetryTotal(retryTotal);
                         consumer = ackConsumer;
                     } else {
-                        consumer = new QueueListenerConsumer(produce, queue, metadata);
+                        consumer = new QueueListenerConsumer(producer, queue, metadata);
                     }
 
                     manage.execute(consumer);
@@ -148,5 +216,13 @@ public class MdqListenerMethodProcessor implements SmartInitializingSingleton, B
                 }
             }
         }
+    }
+
+    public void setAutoAck(boolean autoAck) {
+        this.autoAck = autoAck;
+    }
+
+    public void setRetryTotal(int retryTotal) {
+        this.retryTotal = retryTotal;
     }
 }
